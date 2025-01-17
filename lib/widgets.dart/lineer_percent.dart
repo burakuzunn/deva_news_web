@@ -38,7 +38,6 @@ class _RandomProgressIndicatorExampleState extends State<RandomProgressIndicator
         // Her frame'de progressValue'yu güncelle
         setState(() {
           progressValue = _animation.value;
-          widget.onComplete;
         });
       })
       ..addStatusListener((status) {
@@ -47,6 +46,7 @@ class _RandomProgressIndicatorExampleState extends State<RandomProgressIndicator
           setState(() {
             isLoading = false;
             showData = true;
+            widget.onComplete();
           });
         }
       });

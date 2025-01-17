@@ -72,9 +72,9 @@ class _GradientBorderButtonState extends State<GradientBorderButton> with Single
               startAngle: 0.0,
               endAngle: 2 * math.pi,
               colors: [
-                Colors.purpleAccent,
-                Colors.deepPurple,
-                Colors.purpleAccent,
+                widget.isButtonEnabled ? Colors.purpleAccent : Colors.transparent,
+                widget.isButtonEnabled ? Colors.deepPurple : Colors.transparent,
+                widget.isButtonEnabled ? Colors.purpleAccent : Colors.transparent,
               ],
               // Buton aktif değilse animasyonu durdurduğumuz için
               // `_controller.value` sabit kalacak veya 0 konumuna dönecek

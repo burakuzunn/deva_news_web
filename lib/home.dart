@@ -1,4 +1,8 @@
 import 'dart:ui';
+import 'package:deva_news_web/data..dart';
+import 'package:deva_news_web/news..dart';
+import 'package:deva_news_web/widgets.dart/auto_generate.dart';
+import 'package:deva_news_web/widgets.dart/category_item.dart';
 import 'package:deva_news_web/widgets.dart/gradient_boder_button.dart';
 import 'package:deva_news_web/widgets.dart/lineer_percent.dart';
 import 'package:deva_news_web/widgets.dart/network_image.dart';
@@ -15,503 +19,492 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final List<String> _suggestions = [
-    'Futbol',
-    'Basketbol',
-    'Tenis',
-    'Gezi Rotaları',
-    'Tarih Kitapları',
-    'Doğa Sporları',
-  ];
-
   bool _isButtonEnabled = false;
-  bool showData = false;
-  bool isLoading = false;
-  String _selectedSuggestion = '';
+  bool showData = false; // DataSection görünür mü?
+  bool isLoading = false; // Yükleniyor mu?
+  Map<String, dynamic>? news;
+  Map<String, dynamic>? medical;
 
   @override
   Widget build(BuildContext context) {
-    /// Ekran boyutu bilgisi
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
-      body: Container(
-        width: size.width,
-        height: size.height,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF24243E), // Koyu mavi ton
-              Color(0xFF302B63), // Daha koyu mavi-mor ton
-              Color(0xFF0F0C29), // Çok koyu mor-siyah ton
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            stops: [0.0, 0.5, 1.0], // Dinamik geçiş noktaları
-          ),
-        ),
-        child: Center(
-          child: Container(
-            width: size.width * 0.5,
-            height: size.height * 0.9,
-            constraints: BoxConstraints(
-              minHeight: 400, // Çok küçük ekranlar için minimum yükseklik
-              maxHeight: size.height, // İçerik taşarsa kaydırılabilir
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Ekranın yarısı
+          double baseWidth = constraints.maxWidth * 0.5;
+          // DataSection görünürse 3 katı
+          double targetWidth = showData ? baseWidth * 3 : baseWidth;
+          // Yüksekliği sabit (örnek) = %90
+          double containerHeight = constraints.maxHeight * 0.9;
+
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF24243E),
+                  Color.fromARGB(255, 63, 59, 109),
+                  Color(0xFF0F0C29),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0.0, 0.5, 1.0],
               ),
             ),
-            padding: const EdgeInsets.all(16.0),
-            child: StatefulBuilder(builder: (context, dialogState) {
-              if (isLoading) {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    LottieBuilder.asset("assets/loadin.json"),
-                    RandomProgressIndicatorExample(
-                      () {
-                        dialogState(
-                          () {
-                            isLoading = false;
-                            showData = true;
-                          },
-                        );
-                      },
-                    )
-                  ],
-                );
-              } else if (showData) {
-                return DataSection();
-                ;
-              }
-              return _buildMainContent(dialogState);
-            }),
-          ),
-        ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 50),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeInOut,
+                  width: targetWidth,
+                  height: containerHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                      ),
+                      child: isLoading
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  height: 80,
+                                ),
+                                LottieBuilder.asset("assets/loadin.json"),
+                                const SizedBox(height: 50),
+                                RandomProgressIndicatorExample(() {
+                                  setState(() {
+                                    isLoading = false;
+                                    showData = true;
+                                  });
+                                })
+                              ],
+                            )
+                          : (showData
+                              ? DataSection(
+                                  news: news ?? {},
+                                  medicals: medical ?? {},
+                                  setState: () => setState(() {
+                                        isLoading = false;
+                                        showData = false;
+                                      }))
+                              : _buildMainContent()),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  /// Ana içeriği parçaladık (daha okunaklı olsun diye).
-  Widget _buildMainContent(Function dialogState) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          "DevaAI",
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+  Widget _buildMainContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 50),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "DevaAI",
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-
-        /// Autocomplete (Öneri listeli TextField)
-        Autocomplete<String>(
-          optionsBuilder: (TextEditingValue textEditingValue) {
-            // Kullanıcının yazdıklarıyla eşleşenleri döndürüyoruz
-            if (textEditingValue.text.isEmpty) {
-              return const Iterable<String>.empty();
-            }
-            return _suggestions.where((String option) {
-              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-            });
-          },
-          onSelected: (String selection) {
-            setState(() {
-              _selectedSuggestion = selection;
-              _isButtonEnabled = true; // öneri seçilince buton aktif
-            });
-          },
-          fieldViewBuilder: (
-            BuildContext context,
-            TextEditingController textEditingController,
-            FocusNode focusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            return TextField(
-              controller: textEditingController,
-              focusNode: focusNode,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Anahtar sözcük yazın...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.2),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Colors.white,
-                    width: 2,
-                  ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                  flex: 7,
+                  child: NewsAutocomplete(
+                    onComplete: (selectedNews, randomIlac, randomGroupId) {
+                      setState(() {
+                        _isButtonEnabled = true;
+                      });
+                      news = selectedNews;
+                      medical = randomIlac;
+                      print(randomIlac);
+                      print(randomGroupId);
+                      print(selectedNews);
+                    },
+                  )),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 5,
+                child: GradientBorderButton(
+                  onPressed: () {
+                    setState(() {
+                      isLoading = true;
+                    });
+                  },
+                  isButtonEnabled: _isButtonEnabled,
+                  text: "Fetch the related news...",
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Colors.white,
-                    width: 1,
-                  ),
-                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 30),
+          // Kategoriler
+          Align(
+            alignment: Alignment.centerLeft,
+            child: const Text(
+              "Categories",
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-            );
-          },
-          optionsViewBuilder: (
-            BuildContext context,
-            AutocompleteOnSelected<String> onSelected,
-            Iterable<String> options,
-          ) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                color: Colors.white.withOpacity(0.9),
-                elevation: 4.0,
-                child: SizedBox(
-                  width: 300,
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: options.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final option = options.elementAt(index);
-                      return InkWell(
-                        onTap: () {
-                          onSelected(option);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(option),
-                        ),
-                      );
+            ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              double childAspectRatio = constraints.maxWidth > 600 ? 1.2 : 1.0;
+              return GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 2,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+                childAspectRatio: childAspectRatio * 1.2,
+                children: [
+                  // --- SPOR ---
+                  CategoryItem(
+                    title: 'Sport',
+                    imageUrl: 'assets/sports.jpg',
+                    onTap: () {
+                      setState(() {
+                        final filteredNews = newsData.where((item) => item["category"] == 0).toList();
+
+                        if (filteredNews.isNotEmpty) {
+                          filteredNews.shuffle();
+                          final selectedNews = filteredNews.first;
+
+                          final List<int> groupList = List<int>.from(selectedNews["groupList"]);
+                          final matchedIlacList = ilaclar.where((ilac) => groupList.contains(ilac["group"])).toList();
+
+                          if (matchedIlacList.isNotEmpty) {
+                            matchedIlacList.shuffle();
+                            final filteredIlac = matchedIlacList.first;
+
+                            news = selectedNews;
+                            medical = filteredIlac;
+                            isLoading = true;
+                          } else {}
+                        } else {}
+                      });
                     },
                   ),
-                ),
-              ),
-            );
-          },
-        ),
 
-        const SizedBox(height: 16),
+                  // --- SEYAHAT ---
+                  CategoryItem(
+                    title: 'Travel',
+                    imageUrl: 'assets/travel.jpg',
+                    onTap: () {
+                      setState(() {
+                        final filteredNews = newsData.where((item) => item["category"] == 1).toList();
 
-        /// "Ara" Butonu
-        GradientBorderButton(
-            onPressed: () {
-              dialogState(() {
-                isLoading = true;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Aranacak terim: $_selectedSuggestion'),
-                ),
+                        if (filteredNews.isNotEmpty) {
+                          filteredNews.shuffle();
+                          final selectedNews = filteredNews.first;
+
+                          final List<int> groupList = List<int>.from(selectedNews["groupList"]);
+                          final matchedIlacList = ilaclar.where((ilac) => groupList.contains(ilac["group"])).toList();
+
+                          if (matchedIlacList.isNotEmpty) {
+                            matchedIlacList.shuffle();
+                            final filteredIlac = matchedIlacList.first;
+
+                            news = selectedNews;
+                            medical = filteredIlac;
+                            isLoading = true;
+                          } else {}
+                        } else {}
+                      });
+                    },
+                  ),
+
+                  // --- TARİH ---
+                  CategoryItem(
+                    title: 'History',
+                    imageUrl: 'assets/history.jpg',
+                    onTap: () {
+                      setState(() {
+                        final filteredNews = newsData.where((item) => item["category"] == 2).toList();
+
+                        if (filteredNews.isNotEmpty) {
+                          filteredNews.shuffle();
+                          final selectedNews = filteredNews.first;
+
+                          final List<int> groupList = List<int>.from(selectedNews["groupList"]);
+                          final matchedIlacList = ilaclar.where((ilac) => groupList.contains(ilac["group"])).toList();
+
+                          if (matchedIlacList.isNotEmpty) {
+                            matchedIlacList.shuffle();
+                            final filteredIlac = matchedIlacList.first;
+
+                            news = selectedNews;
+                            medical = filteredIlac;
+                            isLoading = true;
+                          } else {}
+                        } else {}
+                      });
+                    },
+                  ),
+
+                  // --- HOBİ ---
+                  CategoryItem(
+                    title: 'Hobby',
+                    imageUrl: 'assets/hobies.jpg',
+                    onTap: () {
+                      setState(() {
+                        final filteredNews = newsData.where((item) => item["category"] == 3).toList();
+
+                        if (filteredNews.isNotEmpty) {
+                          filteredNews.shuffle();
+                          final selectedNews = filteredNews.first;
+
+                          final List<int> groupList = List<int>.from(selectedNews["groupList"]);
+                          final matchedIlacList = ilaclar.where((ilac) => groupList.contains(ilac["group"])).toList();
+
+                          if (matchedIlacList.isNotEmpty) {
+                            matchedIlacList.shuffle();
+                            final filteredIlac = matchedIlacList.first;
+
+                            news = selectedNews;
+                            medical = filteredIlac;
+                            isLoading = true;
+                          } else {}
+                        } else {}
+                      });
+                    },
+                  ),
+                ],
               );
+              ;
             },
-            isButtonEnabled: _isButtonEnabled,
-            text: "İlgili ilanı getir..."),
-
-        const SizedBox(height: 30),
-
-        /// Kategoriler başlığı
-        Align(
-          alignment: Alignment.centerLeft,
-          child: const Text(
-            "Kategoriler",
-            style: TextStyle(
-              fontSize: 24,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
           ),
-        ),
-        const SizedBox(height: 16),
-
-        GridView.count(
-          shrinkWrap: true,
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 2,
-          children: [
-            _buildCategoryItem(
-              title: 'Spor',
-              imageUrl: 'assets/sports.jpg',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Spor kategorisi seçildi')),
-                );
-              },
-            ),
-            _buildCategoryItem(
-              title: 'Seyahat',
-              imageUrl: 'assets/travel.jpg',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Seyahat kategorisi seçildi')),
-                );
-              },
-            ),
-            _buildCategoryItem(
-              title: 'Tarih',
-              imageUrl: 'assets/history.jpg',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tarih kategorisi seçildi')),
-                );
-              },
-            ),
-            _buildCategoryItem(
-              title: 'Hobi',
-              imageUrl: 'assets/hobies.jpg',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Hobi kategorisi seçildi')),
-                );
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// GridView'da kategori öğesini oluşturan widget.
-  Widget _buildCategoryItem({
-    required String title,
-    required String imageUrl,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      onHover: (value) {
-        print("object");
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12.0),
-          image: DecorationImage(
-            image: AssetImage(imageUrl),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              shadows: [
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 4.0,
-                  color: Colors.black54,
-                )
-              ],
-            ),
-          ),
-        ),
+        ],
       ),
     );
   }
 }
 
 class DataSection extends StatelessWidget {
+  final Function setState;
+  final Map<String, dynamic> news;
+  final Map<String, dynamic> medicals;
+
   const DataSection({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final productData = {
-      "name": "ABYGA 250 mg tablet",
-      "form": "250 mg tablet (120 tablet)",
-      "active_ingredient": "Abirateron asetat",
-      "image_url": "https://www.deva.com.tr/uploads/product_images/big/ABYGA.png",
-      "pdf_url": "https://www.deva.com.tr/uploads/product_files/6elKOZiMC6OpKp4mfOsk.pdf"
-    };
-
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Haber İçeriği",
-                  style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                AppNetworkImage(imageUrl: "https://picsum.photos/300/300"),
-                SizedBox(
-                  height: 10,
-                ),
-                Text(
-                  "Son Dakika",
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Text(
-                  "İlaç mümessili, doktorla gerçekleştirdiği görüşmelerde belirli sorular sorarak doktorun ilgi alanlarını belirler. Bu süreçte yapay zeka devreye girer ve doktorun verdiği cevaplara göre segmentasyon yapar. Yapay zekanın analizi sayesinde, doktorun ilgi alanlarına uygun içerikler sunulabilir. Doktorun cevaplarına göre, yapay zeka uygulamanın sol tarafında ilgili haberleri ve sağ tarafında da haberle ilgili ürünleri gösterir. Bu sayede doktor, en yeni gelişmeleri ve uygun çözümleri hızlıca görür. Bu uygulama, doktorların bilgiye kolay erişimini ve ilaç mümessillerinin daha etkili tanıtım yapmasını sağlar. Yapay zeka destekli bu uygulama, sağlık sektöründe bilgi paylaşımını ve ürün tanıtımını yeni bir boyuta taşımaktadır.",
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w300),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 15,
-        ),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "İlgili Ürün",
-                style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Text(
-                      productData["name"]!,
-                      style: TextStyle(color: Colors.white, fontSize: 29, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  AppNetworkImage(imageUrl: "https://www.deva.com.tr/uploads/product_images/big/ABYGA.png"),
-                ],
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Text(
-                "Form: ${productData["form"]}",
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Text(
-                "Etkin Madde: ${productData["active_ingredient"]}",
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Text(
-                "Detaylı bilgi için ",
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // PDF bağlantısına yönlendirme kodu eklenebilir.
-                },
-                child: Text(
-                  "PDF'yi Görüntüleyin",
-                  style: TextStyle(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.w400, decoration: TextDecoration.underline),
-                ),
-              )
-            ],
-          ),
-        )
-      ],
-    );
-  }
-}
-
-/// GridView'da kategori öğesini oluşturan widget.
-class CategoryItem extends StatefulWidget {
-  final String title;
-  final String imageUrl;
-  final VoidCallback onTap;
-
-  const CategoryItem({
     Key? key,
-    required this.title,
-    required this.imageUrl,
-    required this.onTap,
+    required this.setState,
+    required this.news,
+    required this.medicals,
   }) : super(key: key);
 
   @override
-  _CategoryItemState createState() => _CategoryItemState();
-}
-
-class _CategoryItemState extends State<CategoryItem> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (event) {
-        setState(() {
-          _isHovered = true;
-        });
-      },
-      onExit: (event) {
-        setState(() {
-          _isHovered = false;
-        });
-      },
-      child: InkWell(
-        onTap: widget.onTap,
+    print(medicals["assetPath"].toString());
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: IntrinsicHeight(
         child: Stack(
-          fit: StackFit.expand,
           children: [
-            // Arkaplan görüntüsü
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.0),
-                image: DecorationImage(
-                  image: NetworkImage(widget.imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: _isHovered
-                  ? BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                      child: Container(
-                        color: Colors.black.withOpacity(0.3),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // SOLDAN, HABER İÇERİĞİ
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "News",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    )
-                  : null,
-            ),
-
-            // Başlık metni
-            Center(
-              child: Text(
-                widget.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(1, 1),
-                      blurRadius: 4.0,
-                      color: Colors.black54,
-                    )
-                  ],
+                      Divider(
+                        endIndent: 2,
+                        indent: 4,
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.asset(
+                          news["imageAsset"].toString(), // Haber görseli
+                          height: 300,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        news["baslik"], // Haber başlığı
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 25,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        news["aciklama"], // Haber açıklaması
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+
+                const SizedBox(width: 15),
+
+                // İki sütun arasında dikey çizgi
+                const VerticalDivider(
+                  color: Color.fromARGB(255, 63, 59, 109),
+                ),
+
+                // SAĞDAN, İLGİLİ ÜRÜN
+                Expanded(
+                  flex: 9,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Related Product",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Divider(),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${medicals["adi"]}", // İlaç adı
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 45,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(
+                                height: 10,
+                              ),
+                              ...medicals["içerik"].map<Widget>((area) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 16.0),
+                                  child: Text(
+                                    "- $area", // Kullanım alanlarını listele
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                );
+                              })
+                            ],
+                          ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Image.asset(
+                              medicals["assetPath"].toString(), // İlaç görseli
+                              height: 300,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const SizedBox(height: 10),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: "${medicals["adi"]} ", // Kalın yazılacak kısım
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold, // Kalın yazı stili
+                              ),
+                            ),
+                            TextSpan(
+                              text: medicals["amaci"], // İlaç amacı
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w300, // Normal yazı stili
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Usage Areas:",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      ...medicals["kullanimAlanlari"].asMap().entries.map<Widget>((entry) {
+                        final index = entry.key + 1; // Liste sıralaması için 1'den başlatılır
+                        final area = entry.value; // Kullanım alanı metni
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8, bottom: 6),
+                          child: Text(
+                            "$index. $area", // Sıra numarası ve metin
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: GradientBorderButton(
+                onPressed: () {
+                  setState(); // Durumu güncelle
+                },
+                isButtonEnabled: true,
+                text: "Fetch the related news...",
+              ),
+            )
           ],
         ),
       ),
